@@ -106,7 +106,6 @@ animation-delay:3s;
 100%{background-position:0% 50%;}
 }
 
-/* LAYOUT */
 .wrapper{
 display:flex;
 min-height:100vh;
@@ -204,13 +203,6 @@ background:rgba(34,197,94,.2);
 color:#bbf7d0;
 }
 
-.topbar a{
-color:#bfdbfe;
-text-decoration:none;
-font-weight:600;
-}
-
-/* STATS */
 .stats{
 display:grid;
 grid-template-columns:repeat(4,1fr);
@@ -237,7 +229,6 @@ transform:translateY(-5px);
 font-size:24px;
 }
 
-/* SUMMARY */
 .summary-grid{
 display:grid;
 grid-template-columns:repeat(2,1fr);
@@ -265,7 +256,6 @@ opacity:.9;
 line-height:1.5;
 }
 
-/* SEARCH */
 .searchBox{
 margin-bottom:15px;
 }
@@ -285,7 +275,6 @@ box-shadow:0 4px 16px rgba(0,0,0,.08);
 color:rgba(255,255,255,.7);
 }
 
-/* CARD */
 .card{
 background:linear-gradient(145deg,rgba(255,255,255,.14),rgba(255,255,255,.10));
 backdrop-filter:blur(25px);
@@ -298,7 +287,6 @@ position:relative;
 z-index:2;
 }
 
-/* TABLE */
 table{
 width:100%;
 border-collapse:collapse;
@@ -324,7 +312,6 @@ tr:hover{
 background:rgba(255,255,255,.05);
 }
 
-/* BADGE */
 .badge{
 padding:5px 10px;
 border-radius:999px;
@@ -337,7 +324,6 @@ letter-spacing:.3px;
 .approved{background:#22c55e;color:#000;}
 .rejected{background:#ef4444;color:#fff;}
 
-/* BUTTON ICON STYLE */
 .btn{
 border:none;
 padding:8px 10px;
@@ -358,7 +344,6 @@ transform:scale(1.05);
 .reject{background:#ef4444;color:#fff;}
 .delete{background:#6b7280;color:#fff;}
 
-/* MESSAGE */
 .message{
 margin-bottom:15px;
 padding:12px 14px;
@@ -368,17 +353,11 @@ border:1px solid rgba(34,197,94,.3);
 box-shadow:0 6px 18px rgba(0,0,0,.10);
 }
 
-/* RESPONSIVE */
 @media(max-width:900px){
-.stats{
-grid-template-columns:repeat(2,1fr);
+.stats{grid-template-columns:repeat(2,1fr);}
 }
-}
-
 @media(max-width:600px){
-.stats{
-grid-template-columns:1fr;
-}
+.stats{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -389,7 +368,6 @@ grid-template-columns:1fr;
 <div class="brand">ET Store<span><small>Admin Panel</small></span></div>
 <div class="menu">
 <a href="#" class="active">📊 Dashboard</a>
-
 <a href="logout.php">🚪 Logout</a>
 </div>
 </div>
@@ -400,7 +378,7 @@ grid-template-columns:1fr;
 <div class="user-pill">
 <div class="avatar">A</div>
 <div>
-<div><?php echo htmlspecialchars($_SESSION['admin_user']); ?></div>
+<div><?php echo htmlspecialchars($_SESSION['admin_user'] ?? $_SESSION['admin_username'] ?? 'Admin'); ?></div>
 <div class="status">Online</div>
 </div>
 </div>
@@ -410,7 +388,6 @@ grid-template-columns:1fr;
 <div class="message"><?php echo htmlspecialchars($message); ?></div>
 <?php endif; ?>
 
-<!-- STATS -->
 <div class="stats">
 <div class="stat"><h2><?php echo count($requests); ?></h2><p>Total</p></div>
 <div class="stat"><h2><?php echo countStatus($requests,'pending'); ?></h2><p>Pending</p></div>
@@ -429,31 +406,11 @@ grid-template-columns:1fr;
 </div>
 </div>
 
-<!-- SEARCH -->
 <div class="searchBox">
-<input type="text" id="search" placeholder="Cari nama, email, jenis cuti...">
-</div>
-
-<div class="summary-card" id="lampiran" style="margin-bottom:15px;">
-<div class="summary-title">📂 Lampiran Terbaru</div>
-<?php $attachments = array_filter($requests, fn($item) => !empty($item['surat_path'])); ?>
-<?php if (!empty($attachments)): ?>
-<ul style="margin:8px 0 0 18px; line-height:1.7;">
-<?php foreach (array_slice($attachments, 0, 5) as $attachment): ?>
-<li>
-<a href="../uploads/<?php echo rawurlencode($attachment['surat_path']); ?>" target="_blank" style="color:#bfdbfe;">
-<?php echo htmlspecialchars($attachment['nama']); ?> — <?php echo htmlspecialchars($attachment['surat_path']); ?>
-</a>
-</li>
-<?php endforeach; ?>
-</ul>
-<?php else: ?>
-<div class="summary-text">Belum ada lampiran yang diunggah.</div>
-<?php endif; ?>
+<input type="text" id="search" placeholder="Cari nama, email, jenis cuti atau alasan...">
 </div>
 
 <div class="card" id="pengajuan">
-
 <table id="table">
 <thead>
 <tr>
@@ -461,32 +418,29 @@ grid-template-columns:1fr;
 <th>Email</th>
 <th>Jenis</th>
 <th>Periode</th>
+<th>Alasan</th>
 <th>Status</th>
-<th>Lampiran</th>
 <th>Aksi</th>
 </tr>
 </thead>
 
 <tbody>
-
 <?php foreach($requests as $r): ?>
 <tr>
 <td><?php echo htmlspecialchars($r['nama']); ?></td>
 <td><?php echo htmlspecialchars($r['email']); ?></td>
 <td><?php echo htmlspecialchars($r['jenis_cuti']); ?></td>
-<td><?php echo $r['tanggal_mulai'].' - '.$r['tanggal_selesai']; ?></td>
+<td>
+    <?php 
+    echo date('d M Y', strtotime($r['tanggal_mulai'])) . ' - ' . date('d M Y', strtotime($r['tanggal_selesai'])); 
+    ?>
+</td>
+<td><?php echo htmlspecialchars($r['alasan'] ?? '-'); ?></td>
 
 <td>
-<span class="badge <?php echo $r['status']; ?>">
+<span class="badge <?php echo strtolower($r['status']); ?>">
 <?php echo strtoupper($r['status']); ?>
 </span>
-</td>
-
-<td>
-<?php if (!empty($r['surat_path'])): ?>
-<a href="../uploads/<?php echo rawurlencode($r['surat_path']); ?>" target="_blank" style="color:#bfdbfe;">Lihat</a>
-<?php else: ?>-
-<?php endif; ?>
 </td>
 
 <td>
@@ -494,28 +448,27 @@ grid-template-columns:1fr;
 <input type="hidden" name="id" value="<?php echo $r['id']; ?>">
 <input type="hidden" name="status" value="approved">
 <input type="hidden" name="action" value="update">
-<button class="btn approve">✔</button>
+<button class="btn approve" title="Setujui">✔</button>
 </form>
 
 <form method="post" style="display:inline;">
 <input type="hidden" name="id" value="<?php echo $r['id']; ?>">
 <input type="hidden" name="status" value="rejected">
 <input type="hidden" name="action" value="update">
-<button class="btn reject">✖</button>
+<button class="btn reject" title="Tolak">✖</button>
 </form>
 
-<form method="post" style="display:inline;" onsubmit="return confirm('Hapus data?')">
+<form method="post" style="display:inline;" onsubmit="return confirm('Hapus data pengajuan ini?')">
 <input type="hidden" name="id" value="<?php echo $r['id']; ?>">
 <input type="hidden" name="action" value="delete">
-<button class="btn delete">🗑</button>
+<button class="btn delete" title="Hapus">🗑</button>
 </form>
-
 </td>
 </tr>
 <?php endforeach; ?>
-
 </tbody>
 </table>
+</div>
 
 </div>
 </div>
@@ -527,9 +480,7 @@ let value = this.value.toLowerCase();
 let rows = document.querySelectorAll("#table tbody tr");
 
 rows.forEach(row => {
-row.style.display = row.innerText.toLowerCase().includes(value)
-? ""
-: "none";
+row.style.display = row.innerText.toLowerCase().includes(value) ? "" : "none";
 });
 });
 </script>

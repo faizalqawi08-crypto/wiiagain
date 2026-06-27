@@ -10,13 +10,18 @@ if (empty($_SESSION['user_id'])) {
 try {
     $conn = getConnection();
 
+    // Mengambil data cuti terbaru berdasarkan email user yang sedang login
+    // Ganti $_SESSION['user_email'] jika variabel session email kamu berbeda nama
+    $user_email = $_SESSION['user_email'] ?? ''; 
+
     $stmt = $conn->prepare("
-        SELECT id, nama, email, jenis_cuti, tanggal_mulai, tanggal_selesai, alasan, surat_path, status, created_at
+        SELECT id, nama, email, jenis_cuti, tanggal_mulai, tanggal_selesai, alasan, status, created_at
         FROM cuti_pengajuan
-        WHERE id = ?
+        WHERE email = ? 
+        ORDER BY id DESC LIMIT 1
     ");
 
-    $stmt->bind_param('i', $_SESSION['user_id']);
+    $stmt->bind_param('s', $user_email);
     $stmt->execute();
 
     $result = $stmt->get_result();
@@ -38,7 +43,6 @@ try {
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-
 *{
 margin:0;
 padding:0;
@@ -213,37 +217,6 @@ font-size:13px;
 opacity:.85;
 }
 
-/* HEADER */
-.header{
-text-align:center;
-padding:30px;
-background:linear-gradient(135deg,rgba(255,255,255,.15),rgba(255,255,255,.05));
-}
-
-.header h1{
-font-size:32px;
-}
-
-.header p{
-opacity:.85;
-font-size:14px;
-}
-
-/* CONTENT */
-.content{
-padding:30px;
-}
-
-/* WELCOME */
-.welcome{
-background:rgba(255,255,255,.10);
-padding:12px 15px;
-border-radius:12px;
-margin-bottom:20px;
-border:1px solid rgba(255,255,255,.15);
-}
-
-/* GRID */
 .grid{
 display:grid;
 grid-template-columns:repeat(2,1fr);
@@ -251,12 +224,16 @@ gap:15px;
 margin-bottom:20px;
 }
 
-.card{
+.card, .detail-box {
 background:rgba(255,255,255,.10);
 border:1px solid rgba(255,255,255,.15);
 padding:15px;
 border-radius:15px;
 transition:.3s;
+}
+
+.detail-box {
+margin-bottom: 20px;
 }
 
 .card:hover{
@@ -273,19 +250,10 @@ margin-bottom:5px;
 font-weight:600;
 }
 
-/* REASON */
-.reason{
-background:rgba(255,255,255,.10);
-padding:15px;
-border-radius:15px;
-margin-bottom:20px;
-border:1px solid rgba(255,255,255,.15);
-}
-
-/* STATUS */
 .status{
 text-align:center;
 margin-bottom:25px;
+margin-top:20px;
 }
 
 .badge{
@@ -311,12 +279,12 @@ background:#ef4444;
 color:#fff;
 }
 
-/* BUTTONS */
 .actions{
 display:flex;
 justify-content:center;
 gap:10px;
 flex-wrap:wrap;
+margin-top:20px;
 }
 
 .btn{
@@ -337,14 +305,12 @@ transform:translateY(-3px);
 .success{background:#16a34a;}
 .danger{background:#dc2626;}
 
-/* EMPTY */
 .empty{
 text-align:center;
 padding:40px;
 opacity:.8;
 }
 
-/* ERROR */
 .error{
 background:rgba(239,68,68,.2);
 border:1px solid rgba(239,68,68,.3);
@@ -353,13 +319,11 @@ border-radius:12px;
 margin-bottom:15px;
 }
 
-/* RESPONSIVE */
 @media(max-width:900px){
 .wrapper{flex-direction:column;}
 .sidebar{width:100%;border-right:0;border-bottom:1px solid rgba(255,255,255,.12);}
 .grid{grid-template-columns:1fr;}
 }
-
 </style>
 </head>
 
@@ -393,7 +357,7 @@ margin-bottom:15px;
 </div>
 
 <div class="hero">
-<div class="welcome">Halo, <?php echo htmlspecialchars($_SESSION['user_name']); ?></div>
+<div class="welcome">Halo, <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Karyawan'); ?></div>
 <div class="sub">Pantau proses persetujuan cuti Anda dari panel yang lebih terstruktur dan modern.</div>
 </div>
 
@@ -404,74 +368,63 @@ margin-bottom:15px;
 <?php if(!empty($request)): ?>
 
 <div class="grid">
+    <div class="card">
+        <div class="label">Nama</div>
+        <div class="value"><?php echo htmlspecialchars($request['nama']); ?></div>
+    </div>
 
-<div class="card">
-<div class="label">Nama</div>
-<div class="value"><?php echo htmlspecialchars($request['nama']); ?></div>
-</div>
+    <div class="card">
+        <div class="label">Email</div>
+        <div class="value"><?php echo htmlspecialchars($request['email']); ?></div>
+    </div>
 
-<div class="card">
-<div class="label">Email</div>
-<div class="value"><?php echo htmlspecialchars($request['email']); ?></div>
-</div>
+    <div class="card">
+        <div class="label">Jenis Cuti</div>
+        <div class="value"><?php echo htmlspecialchars($request['jenis_cuti']); ?></div>
+    </div>
 
-<div class="card">
-<div class="label">Jenis Cuti</div>
-<div class="value"><?php echo htmlspecialchars($request['jenis_cuti']); ?></div>
-</div>
+    <div class="card">
+        <div class="label">Tanggal Pengajuan</div>
+        <div class="value"><?php echo date('d M Y', strtotime($request['created_at'])); ?></div>
+    </div>
 
-<div class="card">
-<div class="label">Tanggal Pengajuan</div>
-<div class="value"><?php echo date('d M Y', strtotime($request['created_at'])); ?></div>
-</div>
+    <div class="card">
+        <div class="label">Mulai</div>
+        <div class="value"><?php echo date('d M Y', strtotime($request['tanggal_mulai'])); ?></div>
+    </div>
 
-<div class="card">
-<div class="label">Mulai</div>
-<div class="value"><?php echo $request['tanggal_mulai']; ?></div>
-</div>
-
-<div class="card">
-<div class="label">Selesai</div>
-<div class="value"><?php echo $request['tanggal_selesai']; ?></div>
-</div>
-
+    <div class="card">
+        <div class="label">Selesai</div>
+        <div class="value"><?php echo date('d M Y', strtotime($request['tanggal_selesai'])); ?></div>
+    </div>
 </div>
 
 <div class="detail-box">
-<div class="label">Alasan</div>
-<div class="value"><?php echo nl2br(htmlspecialchars($request['alasan'])); ?></div>
+    <div class="label">Alasan</div>
+    <div class="value"><?php echo nl2br(htmlspecialchars($request['alasan'])); ?></div>
 </div>
-
-<?php if (!empty($request['surat_path'])): ?>
-<div class="detail-box">
-<div class="label">Lampiran Surat</div>
-<div class="value">
-<a href="../uploads/<?php echo rawurlencode($request['surat_path']); ?>" target="_blank" style="color:#bfdbfe;">Lihat file lampiran</a>
-</div>
-</div>
-<?php endif; ?>
 
 <div class="status">
-<?php
-$status = strtolower($request['status'] ?? 'pending');
-$text = [
-'pending' => '⏳ Menunggu Persetujuan',
-'approved' => '✅ Disetujui',
-'rejected' => '❌ Ditolak'
-];
-?>
-<span class="badge <?php echo $status; ?>"><?php echo $text[$status] ?? '⏳ Menunggu Persetujuan'; ?></span>
+    <?php
+    $status = strtolower($request['status'] ?? 'pending');
+    $text = [
+        'pending' => '⏳ Menunggu Persetujuan',
+        'approved' => '✅ Disetujui',
+        'rejected' => '❌ Ditolak'
+    ];
+    ?>
+    <span class="badge <?php echo $status; ?>"><?php echo $text[$status] ?? '⏳ Menunggu Persetujuan'; ?></span>
 </div>
 
 <?php else: ?>
 <div class="empty">
-<h3>📭 Data Tidak Ditemukan</h3>
-<p>Belum ada pengajuan cuti untuk akun ini.</p>
+    <h3>📭 Data Tidak Ditemukan</h3>
+    <p>Belum ada pengajuan cuti untuk akun dengan email ini.</p>
 </div>
 <?php endif; ?>
 
 <div class="actions">
-<a href="login.php" class="btn primary">🔍 Cek Lagi</a>
+<a href="status.php" class="btn primary">🔍 Refresh</a>
 <a href="../form.php" class="btn success">➕ Ajukan Cuti</a>
 <a href="logout.php" class="btn danger">🚪 Logout</a>
 </div>
